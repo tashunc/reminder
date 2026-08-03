@@ -28,3 +28,10 @@ All notable functional changes to the project, in plain language.
   12+/14+ permission flows (exact alarms, full-screen intents, post
   notifications) with an in-app banner if exact alarms are off, and
   reschedules alarms after a device reboot. See `docs/alarms.md`.
+- **All-day tasks now get randomized check-in prompts.** A task with no
+  specific time gets 3 full-screen prompts a day, at random times spread
+  between 9am and 9pm, via WorkManager instead of a single fixed alarm.
+  Prompts reuse the same full-screen alarm UI, get cancelled automatically
+  if the task is completed/deleted, and are rescheduled daily even if the
+  app is never opened (with the same silent-reauth caveat as boot
+  rescheduling). See `docs/all-day-notifications.md`.

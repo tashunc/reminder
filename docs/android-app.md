@@ -52,7 +52,8 @@ implemented.
 - Sign-in doesn't display the account email/name (see `docs/drive-storage.md`).
 
 Time-based reminders (exact alarms + full-screen alarm UI) are now
-implemented — see `docs/alarms.md`.
+implemented — see `docs/alarms.md`. All-day reminders (randomized
+WorkManager prompts) are now implemented — see `docs/all-day-notifications.md`.
 
 ## Platform limitations
 

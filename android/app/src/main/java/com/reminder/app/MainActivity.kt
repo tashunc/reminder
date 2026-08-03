@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.reminder.app.alarm.AlarmScheduler
+import com.reminder.app.allday.AllDayPromptScheduler
 import com.reminder.app.auth.AuthManager
 import com.reminder.app.auth.DriveAuthorizationResult
 import com.reminder.app.data.TaskRepository
@@ -28,7 +29,10 @@ class MainActivity : ComponentActivity() {
 
     private val authManager by lazy { AuthManager(applicationContext) }
     private val alarmScheduler by lazy { AlarmScheduler(applicationContext) }
-    private val repository by lazy { TaskRepository(authManager, alarmScheduler = alarmScheduler) }
+    private val allDayPromptScheduler by lazy { AllDayPromptScheduler(applicationContext) }
+    private val repository by lazy {
+        TaskRepository(authManager, alarmScheduler = alarmScheduler, allDayPromptScheduler = allDayPromptScheduler)
+    }
     private val viewModel: TaskListViewModel by viewModels {
         TaskListViewModel.factory(repository, alarmScheduler)
     }

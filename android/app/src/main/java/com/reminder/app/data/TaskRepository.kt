@@ -1,6 +1,7 @@
 package com.reminder.app.data
 
 import com.reminder.app.alarm.AlarmScheduler
+import com.reminder.app.allday.AllDayPromptScheduler
 import com.reminder.app.auth.AuthManager
 import java.time.Instant
 import java.util.UUID
@@ -10,14 +11,16 @@ import java.util.UUID
  * On write conflicts, follows the retry policy in docs/sync.md: re-fetch,
  * re-apply the change on top of the fresh data, retry once.
  *
- * [alarmScheduler], if provided, is reconciled against the current task
- * list after every fetch and write (see [reconcileAlarms]) so exact alarms
- * always match what's in Drive — including tasks changed by other clients.
+ * [alarmScheduler] and [allDayPromptScheduler], if provided, are reconciled
+ * against the current task list after every fetch and write (see
+ * [reconcileSchedules]) so exact alarms and all-day prompts always match
+ * what's in Drive — including tasks changed by other clients.
  */
 class TaskRepository(
     private val authManager: AuthManager,
     private val store: DriveTaskStore = DriveTaskStore(),
     private val alarmScheduler: AlarmScheduler? = null,
+    private val allDayPromptScheduler: AllDayPromptScheduler? = null,
 ) {
     private var fileId: String? = null
     private var revisionId: String? = null
@@ -60,9 +63,11 @@ class TaskRepository(
 
     suspend fun deleteTask(taskId: String) {
         mutate { current -> current.filterNot { it.id == taskId } }
-        // The deleted task is no longer in `tasks`, so reconcileAlarms() (which
-        // only walks tasks still present) can't cancel it — do it explicitly.
+        // The deleted task is no longer in `tasks`, so reconcileSchedules()
+        // (which only walks tasks still present) can't cancel it for us —
+        // do it explicitly for both schedulers (whichever applied is a no-op).
         alarmScheduler?.cancel(taskId)
+        allDayPromptScheduler?.cancelToday(taskId)
     }
 
     private suspend fun refetch() {
@@ -70,16 +75,7 @@ class TaskRepository(
         val remote = store.fetch(token)
         fileId = remote.fileId
         revisionId = remote.headRevisionId
-        tasks = remote.taskFile.tasks
-        reconcileAlarms()
-    }
-
-    /** Schedules the alarm for every incomplete, time-based task and cancels it for the rest. */
-    private fun reconcileAlarms() {
-        val scheduler = alarmScheduler ?: return
-        tasks.forEach { task ->
-            if (task.time != null && !task.completed) scheduler.schedule(task) else scheduler.cancel(task.id)
-        }
+        updateTasksAndReconcile(remote.taskFile.tasks)
     }
 
     private suspend fun mutate(transform: (List<Task>) -> List<Task>) {
@@ -98,7 +94,37 @@ class TaskRepository(
         val remote = store.write(token, fileId, revisionId, TaskFile(tasks = newTasks))
         fileId = remote.fileId
         revisionId = remote.headRevisionId
+        updateTasksAndReconcile(newTasks)
+    }
+
+    private fun updateTasksAndReconcile(newTasks: List<Task>) {
+        val previous = tasks
         tasks = newTasks
-        reconcileAlarms()
+        reconcileSchedules(previous, newTasks)
+    }
+
+    private fun reconcileSchedules(previous: List<Task>, current: List<Task>) {
+        alarmScheduler?.let { scheduler ->
+            current.forEach { task ->
+                if (task.time != null && !task.completed) scheduler.schedule(task) else scheduler.cancel(task.id)
+            }
+        }
+
+        allDayPromptScheduler?.let { scheduler ->
+            // scheduleTodayIfNeeded() only picks new random times once per
+            // calendar day, so cancellation for tasks that stopped
+            // qualifying (completed/deleted/converted/moved off today) has
+            // to be handled separately by diffing against the prior state.
+            val currentById = current.associateBy { it.id }
+            previous.forEach { old ->
+                if (old.time == null && !old.completed) {
+                    val updated = currentById[old.id]
+                    if (updated == null || updated.completed || updated.time != null || updated.day != old.day) {
+                        scheduler.cancelToday(old.id)
+                    }
+                }
+            }
+            scheduler.scheduleTodayIfNeeded(current)
+        }
     }
 }
