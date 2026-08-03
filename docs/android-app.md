@@ -43,11 +43,16 @@ implemented.
 - Day/time entry is plain text fields (`YYYY-MM-DD` / `HH:mm`), not a real
   date/time picker — fine for exercising the CRUD + Drive round-trip, needs
   replacing before this is user-facing.
-- No pull-to-refresh / periodic background refresh yet (`docs/sync.md`
-  describes the intended model; only "on sign-in" refresh exists so far).
+- Refresh now happens on sign-in and every time the Activity resumes
+  (`MainActivity.onResume`), matching the "fetch on open" part of
+  `docs/sync.md` — but there's still no pull-to-refresh gesture and no
+  periodic background refresh while the app is closed.
 - No offline handling — a failed Drive call surfaces as a snackbar error,
   nothing is queued for retry.
 - Sign-in doesn't display the account email/name (see `docs/drive-storage.md`).
+
+Time-based reminders (exact alarms + full-screen alarm UI) are now
+implemented — see `docs/alarms.md`.
 
 ## Platform limitations
 

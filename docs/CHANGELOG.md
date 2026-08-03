@@ -21,3 +21,10 @@ All notable functional changes to the project, in plain language.
   this environment) first pass: Google sign-in via Drive OAuth consent,
   a task list grouped by day with add/complete/delete, all persisted to
   `tasks.json` in the user's Drive App Data folder. See `docs/android-app.md`.
+- **Time-based reminders now ring like a real alarm.** Tasks with a
+  specific time set schedule an exact `AlarmManager` alarm that shows a
+  full-screen alarm UI over the lock screen, wakes the screen, and needs a
+  Dismiss tap — not just a regular notification. Includes the Android
+  12+/14+ permission flows (exact alarms, full-screen intents, post
+  notifications) with an in-app banner if exact alarms are off, and
+  reschedules alarms after a device reboot. See `docs/alarms.md`.

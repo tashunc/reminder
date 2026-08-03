@@ -1,5 +1,6 @@
 package com.reminder.app.data
 
+import com.reminder.app.alarm.AlarmScheduler
 import com.reminder.app.auth.AuthManager
 import java.time.Instant
 import java.util.UUID
@@ -8,10 +9,15 @@ import java.util.UUID
  * Read-modify-write task store backed by Drive App Data (docs/drive-storage.md).
  * On write conflicts, follows the retry policy in docs/sync.md: re-fetch,
  * re-apply the change on top of the fresh data, retry once.
+ *
+ * [alarmScheduler], if provided, is reconciled against the current task
+ * list after every fetch and write (see [reconcileAlarms]) so exact alarms
+ * always match what's in Drive — including tasks changed by other clients.
  */
 class TaskRepository(
     private val authManager: AuthManager,
     private val store: DriveTaskStore = DriveTaskStore(),
+    private val alarmScheduler: AlarmScheduler? = null,
 ) {
     private var fileId: String? = null
     private var revisionId: String? = null
@@ -54,6 +60,9 @@ class TaskRepository(
 
     suspend fun deleteTask(taskId: String) {
         mutate { current -> current.filterNot { it.id == taskId } }
+        // The deleted task is no longer in `tasks`, so reconcileAlarms() (which
+        // only walks tasks still present) can't cancel it — do it explicitly.
+        alarmScheduler?.cancel(taskId)
     }
 
     private suspend fun refetch() {
@@ -62,6 +71,15 @@ class TaskRepository(
         fileId = remote.fileId
         revisionId = remote.headRevisionId
         tasks = remote.taskFile.tasks
+        reconcileAlarms()
+    }
+
+    /** Schedules the alarm for every incomplete, time-based task and cancels it for the rest. */
+    private fun reconcileAlarms() {
+        val scheduler = alarmScheduler ?: return
+        tasks.forEach { task ->
+            if (task.time != null && !task.completed) scheduler.schedule(task) else scheduler.cancel(task.id)
+        }
     }
 
     private suspend fun mutate(transform: (List<Task>) -> List<Task>) {
@@ -81,5 +99,6 @@ class TaskRepository(
         fileId = remote.fileId
         revisionId = remote.headRevisionId
         tasks = newTasks
+        reconcileAlarms()
     }
 }
