@@ -16,3 +16,8 @@ All notable functional changes to the project, in plain language.
   access grant. Trade-off: no real-time cross-device sync — clients fetch
   the latest data on open/refresh instead of getting instant pushes. See
   `docs/drive-storage.md`, `docs/data-model.md`, `docs/sync.md`.
+- **Android app scaffolded: sign-in + task list.** Added the `android/`
+  Gradle project with a working (not yet build-verified — no Android SDK in
+  this environment) first pass: Google sign-in via Drive OAuth consent,
+  a task list grouped by day with add/complete/delete, all persisted to
+  `tasks.json` in the user's Drive App Data folder. See `docs/android-app.md`.
