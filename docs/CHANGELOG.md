@@ -35,3 +35,9 @@ All notable functional changes to the project, in plain language.
   if the task is completed/deleted, and are rescheduled daily even if the
   app is never opened (with the same silent-reauth caveat as boot
   rescheduling). See `docs/all-day-notifications.md`.
+- **Added a home screen widget.** A resizable Glance widget shows upcoming
+  tasks grouped by day (with time, if set) and opens the app when tapped.
+  It renders from a local snapshot that refreshes whenever the app syncs
+  with Drive — on open, pull-to-refresh, the daily background worker, or
+  after a reboot — rather than talking to Drive itself. See
+  `docs/widget.md`.

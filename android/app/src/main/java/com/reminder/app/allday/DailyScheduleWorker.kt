@@ -7,6 +7,7 @@ import com.reminder.app.alarm.AlarmScheduler
 import com.reminder.app.auth.AuthManager
 import com.reminder.app.auth.DriveAuthorizationResult
 import com.reminder.app.data.TaskRepository
+import com.reminder.app.widget.TaskWidgetUpdater
 
 /**
  * Once-a-day fallback for `AllDayPromptScheduler.scheduleTodayIfNeeded`,
@@ -25,9 +26,10 @@ class DailyScheduleWorker(appContext: Context, params: WorkerParameters) : Corou
             authManager,
             alarmScheduler = AlarmScheduler(applicationContext),
             allDayPromptScheduler = AllDayPromptScheduler(applicationContext),
+            widgetUpdater = TaskWidgetUpdater(applicationContext),
         )
-        // loadTasks() -> refetch() reconciles all-day prompt scheduling for
-        // whatever it loads, same as every other repository consumer.
+        // loadTasks() -> refetch() reconciles all-day prompt scheduling and
+        // the widget for whatever it loads, same as every other consumer.
         val loaded = runCatching { repository.loadTasks() }
         return if (loaded.isSuccess) Result.success() else Result.retry()
     }

@@ -3,9 +3,11 @@ package com.reminder.app.alarm
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.reminder.app.allday.AllDayPromptScheduler
 import com.reminder.app.auth.AuthManager
 import com.reminder.app.auth.DriveAuthorizationResult
 import com.reminder.app.data.TaskRepository
+import com.reminder.app.widget.TaskWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -40,10 +42,16 @@ class BootReceiver : BroadcastReceiver() {
         val authResult = runCatching { authManager.requestDriveAuthorization() }.getOrNull()
         if (authResult !is DriveAuthorizationResult.Granted) return
 
-        // TaskRepository.loadTasks() reconciles alarm scheduling for every
-        // task it loads (see TaskRepository.reconcileAlarms), so a plain
-        // load is enough to reschedule everything that's due in the future.
-        val repository = TaskRepository(authManager, alarmScheduler = AlarmScheduler(context))
+        // TaskRepository.loadTasks() reconciles alarms, all-day prompts, and
+        // the widget for every task it loads (see
+        // TaskRepository.reconcileSchedules), so a plain load is enough to
+        // restore everything that's due in the future.
+        val repository = TaskRepository(
+            authManager,
+            alarmScheduler = AlarmScheduler(context),
+            allDayPromptScheduler = AllDayPromptScheduler(context),
+            widgetUpdater = TaskWidgetUpdater(context),
+        )
         runCatching { repository.loadTasks() }
     }
 }

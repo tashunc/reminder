@@ -54,6 +54,7 @@ implemented.
 Time-based reminders (exact alarms + full-screen alarm UI) are now
 implemented — see `docs/alarms.md`. All-day reminders (randomized
 WorkManager prompts) are now implemented — see `docs/all-day-notifications.md`.
+The home screen widget is now implemented — see `docs/widget.md`.
 
 ## Platform limitations
 

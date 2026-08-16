@@ -23,6 +23,7 @@ import com.reminder.app.data.TaskRepository
 import com.reminder.app.ui.tasklist.TaskListScreen
 import com.reminder.app.ui.tasklist.TaskListViewModel
 import com.reminder.app.ui.theme.ReminderAppTheme
+import com.reminder.app.widget.TaskWidgetUpdater
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -30,8 +31,14 @@ class MainActivity : ComponentActivity() {
     private val authManager by lazy { AuthManager(applicationContext) }
     private val alarmScheduler by lazy { AlarmScheduler(applicationContext) }
     private val allDayPromptScheduler by lazy { AllDayPromptScheduler(applicationContext) }
+    private val widgetUpdater by lazy { TaskWidgetUpdater(applicationContext) }
     private val repository by lazy {
-        TaskRepository(authManager, alarmScheduler = alarmScheduler, allDayPromptScheduler = allDayPromptScheduler)
+        TaskRepository(
+            authManager,
+            alarmScheduler = alarmScheduler,
+            allDayPromptScheduler = allDayPromptScheduler,
+            widgetUpdater = widgetUpdater,
+        )
     }
     private val viewModel: TaskListViewModel by viewModels {
         TaskListViewModel.factory(repository, alarmScheduler)

@@ -3,6 +3,7 @@ package com.reminder.app.data
 import com.reminder.app.alarm.AlarmScheduler
 import com.reminder.app.allday.AllDayPromptScheduler
 import com.reminder.app.auth.AuthManager
+import com.reminder.app.widget.TaskWidgetUpdater
 import java.time.Instant
 import java.util.UUID
 
@@ -11,16 +12,18 @@ import java.util.UUID
  * On write conflicts, follows the retry policy in docs/sync.md: re-fetch,
  * re-apply the change on top of the fresh data, retry once.
  *
- * [alarmScheduler] and [allDayPromptScheduler], if provided, are reconciled
- * against the current task list after every fetch and write (see
- * [reconcileSchedules]) so exact alarms and all-day prompts always match
- * what's in Drive — including tasks changed by other clients.
+ * [alarmScheduler], [allDayPromptScheduler], and [widgetUpdater], if
+ * provided, are reconciled/refreshed against the current task list after
+ * every fetch and write (see [reconcileSchedules]) so exact alarms,
+ * all-day prompts, and the home screen widget always match what's in
+ * Drive — including tasks changed by other clients.
  */
 class TaskRepository(
     private val authManager: AuthManager,
     private val store: DriveTaskStore = DriveTaskStore(),
     private val alarmScheduler: AlarmScheduler? = null,
     private val allDayPromptScheduler: AllDayPromptScheduler? = null,
+    private val widgetUpdater: TaskWidgetUpdater? = null,
 ) {
     private var fileId: String? = null
     private var revisionId: String? = null
@@ -97,10 +100,11 @@ class TaskRepository(
         updateTasksAndReconcile(newTasks)
     }
 
-    private fun updateTasksAndReconcile(newTasks: List<Task>) {
+    private suspend fun updateTasksAndReconcile(newTasks: List<Task>) {
         val previous = tasks
         tasks = newTasks
         reconcileSchedules(previous, newTasks)
+        widgetUpdater?.update(newTasks)
     }
 
     private fun reconcileSchedules(previous: List<Task>, current: List<Task>) {
